@@ -1,15 +1,13 @@
 #!/bin/sh
 
 genconf() {
-local fn=$1
-local idx=$(echo $fn | tr -C -d '0-9')
-if [ -z "$idx" ]; then
-	echo "conf name has to be serverDIGIT.conf"
-	exit 1
-fi
-local port=$(expr 110 + $idx)
-local tun=$(expr $idx - 1)
-cat << EOF > $fn
+local ofn=$1
+[ -f $ofn ] && { echo "file $ofn already existed, removing it first"; exit 1; }
+local num=$(echo $ofn | tr -C -d '0-9')
+[ -z "$num" ] && { echo "configuration file name has to be like server123.conf" ; exit 1; }
+local port=$((110+$num))
+local tun=$(($num-1))
+cat << EOF > $ofn
 dev tun$tun
 secret /etc/openvpn/static.key
 port $port
@@ -18,16 +16,13 @@ ifconfig 10.8.$tun.1 10.8.$tun.2
 comp-lzo
 script-security 2
 up /etc/openvpn/up-openvpn
-#tun-mtu 8080
-#fragment 0
-#mssfix 0
-#daemon
 keepalive 30 90
 EOF
 }
 
 if [ $# -lt 1 ]; then
-	echo "Missing output conf name"
+	echo "missing openvpn configuration file name for outputing."
+	echo "Usage: $0 <server1.conf>"
 	exit 1
 fi
 
