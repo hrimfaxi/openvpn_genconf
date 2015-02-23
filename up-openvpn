@@ -1,0 +1,15 @@
+#!/bin/bash
+
+iptablesbin=/sbin/iptables
+# Outgoing IP
+hostip=
+while IFS=$': \t' read -a line ;do
+    [ -z "${line%inet}" ] && ip=${line[${#line[1]}>4?1:2]} &&
+    [ $(echo $ip | sed 's/\(\(^127\.0\.0\.1\)\|\(^10\.\)\|\(^172\.1[6-9]\.\)\|\(^172\.2[0-9]\.\)\|\(^172\.3[0-1]\.\)\|\(^192\.168\.\)\).*//g') ] && hostip=$ip
+done< <(LANG=C /sbin/ifconfig)
+
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+if ! $iptablesbin -n -t nat -L POSTROUTING |grep "$5" > /dev/null 2>&1; then
+        $iptablesbin -t nat -A POSTROUTING -s "$5" -j SNAT --to-source $hostip
+fi
